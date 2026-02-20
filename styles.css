@@ -1,0 +1,166 @@
+:root {
+  --primary: #7b2cbf;
+  --primary-dark: #5a189a;
+  --accent: #ffd166;
+  --bg: #f8f5ff;
+  --text: #2b2d42;
+  --white: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Montserrat", sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.hero {
+  background: linear-gradient(135deg, #9d4edd, #7b2cbf);
+  color: var(--white);
+  padding: 1.5rem 8%;
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  margin: 0;
+  font-size: 1.7rem;
+}
+
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 1.2rem;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-links a {
+  color: var(--white);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.hero-content {
+  max-width: 620px;
+  padding: 4rem 0 3rem;
+}
+
+.tag {
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.hero-content h2 {
+  font-size: 2.5rem;
+  margin: 0.5rem 0;
+}
+
+.hero-content p {
+  line-height: 1.6;
+}
+
+.cta {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.8rem 1.4rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #3c096c;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+main {
+  padding: 2.5rem 8%;
+}
+
+section {
+  margin-bottom: 3rem;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: var(--white);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 8px 20px rgba(42, 17, 84, 0.08);
+}
+
+.card h3 {
+  margin-top: 0;
+}
+
+.card span {
+  display: block;
+  font-weight: 700;
+  margin: 0.5rem 0 0.8rem;
+}
+
+.card button,
+form button {
+  border: 0;
+  border-radius: 8px;
+  padding: 0.7rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--primary);
+  color: var(--white);
+}
+
+.beneficios ul {
+  padding-left: 1rem;
+  line-height: 1.8;
+}
+
+.contacto form {
+  background: var(--white);
+  padding: 1rem;
+  border-radius: 12px;
+  max-width: 420px;
+  display: grid;
+  gap: 0.6rem;
+}
+
+input[type="email"] {
+  padding: 0.7rem;
+  border-radius: 8px;
+  border: 1px solid #d2c3eb;
+}
+
+footer {
+  text-align: center;
+  padding: 1rem;
+  background: #220543;
+  color: var(--white);
+}
+
+@media (max-width: 700px) {
+  .nav {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .hero-content h2 {
+    font-size: 2rem;
+  }
+}
