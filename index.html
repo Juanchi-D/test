@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mansión Diurna 3D</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #cfe4ff;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      #hud {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        color: #1e2a3a;
+      }
+
+      #info {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        max-width: 380px;
+        padding: 12px 14px;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(120, 145, 180, 0.38);
+        border-radius: 10px;
+        box-shadow: 0 0 28px rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(4px);
+      }
+
+      #info h1 {
+        margin: 0 0 8px;
+        font-size: 1.04rem;
+        color: #2e4f77;
+      }
+
+      #info p {
+        margin: 0;
+        line-height: 1.35;
+        font-size: 0.91rem;
+        color: #243a57;
+      }
+
+      #crosshair {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 18px;
+        height: 18px;
+        transform: translate(-50%, -50%);
+      }
+
+      #crosshair::before,
+      #crosshair::after {
+        content: "";
+        position: absolute;
+        background: rgba(50, 73, 106, 0.55);
+      }
+
+      #crosshair::before {
+        left: 8px;
+        top: 0;
+        width: 2px;
+        height: 18px;
+      }
+
+      #crosshair::after {
+        top: 8px;
+        left: 0;
+        width: 18px;
+        height: 2px;
+      }
+
+      #prompt {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px 16px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.75);
+        border: 1px solid rgba(110, 138, 171, 0.45);
+        font-size: 0.85rem;
+      }
+
+      a {
+        color: #ffe6a1;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="hud">
+      <div id="info">
+        <h1>🏛️ Mansión Diurna — Modo Exploración</h1>
+        <p>
+          Click para entrar. <b>WASD</b> para moverte, <b>mouse</b> para mirar,
+          <b>Shift</b> para correr, <b>Espacio</b> para saltar.
+          Recorre la entrada, biblioteca, comedor y el gran pasillo para observar el mapa con buena luz.
+        </p>
+      </div>
+      <div id="crosshair"></div>
+      <div id="prompt">Haz click para comenzar la exploración</div>
+    </div>
+
+    <script type="module">
+      import * as THREE from "https://unpkg.com/three@0.162.0/build/three.module.js";
+      import { PointerLockControls } from "https://unpkg.com/three@0.162.0/examples/jsm/controls/PointerLockControls.js";
+
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0xc7d8ef, 0.008);
+
+      const camera = new THREE.PerspectiveCamera(
+        72,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        500
+      );
+      camera.position.set(0, 1.75, 9);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      document.body.appendChild(renderer.domElement);
+
+      const controls = new PointerLockControls(camera, renderer.domElement);
+      const prompt = document.getElementById("prompt");
+
+      document.body.addEventListener("click", () => controls.lock());
+      controls.addEventListener("lock", () => {
+        prompt.textContent = "Explorando el mapa... Presiona ESC para liberar el mouse";
+      });
+      controls.addEventListener("unlock", () => {
+        prompt.textContent = "Haz click para continuar explorando";
+      });
+
+      // Iluminación base
+      const ambient = new THREE.AmbientLight(0xe8f1ff, 0.72);
+      scene.add(ambient);
+
+      const sunLight = new THREE.DirectionalLight(0xfff0cf, 1.05);
+      sunLight.position.set(16, 28, 10);
+      sunLight.castShadow = true;
+      sunLight.shadow.mapSize.set(2048, 2048);
+      sunLight.shadow.camera.left = -40;
+      sunLight.shadow.camera.right = 40;
+      sunLight.shadow.camera.top = 40;
+      sunLight.shadow.camera.bottom = -40;
+      scene.add(sunLight);
+
+      const floorTexture = createCheckerTexture("#8b8177", "#756b62", 1024, 14);
+      const wallTexture = createCheckerTexture("#d8d1c9", "#c7bfb7", 512, 18);
+      floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
+      wallTexture.wrapS = wallTexture.wrapT = THREE.RepeatWrapping;
+      floorTexture.repeat.set(18, 18);
+      wallTexture.repeat.set(10, 4);
+
+      // Suelo principal
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(76, 76),
+        new THREE.MeshStandardMaterial({
+          map: floorTexture,
+          roughness: 0.95,
+          metalness: 0.05,
+        })
+      );
+      floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
+      scene.add(floor);
+
+      // Techo oscuro
+      const ceiling = new THREE.Mesh(
+        new THREE.PlaneGeometry(58, 58),
+        new THREE.MeshStandardMaterial({ color: 0xf0ece6, roughness: 1 })
+      );
+      ceiling.position.y = 8;
+      ceiling.rotation.x = Math.PI / 2;
+      ceiling.receiveShadow = true;
+      scene.add(ceiling);
+
+      buildMansionShell();
+      buildRoomsAndDecor();
+      buildExteriorHints();
+
+      // Movimiento FPS
+      const velocity = new THREE.Vector3();
+      const direction = new THREE.Vector3();
+      const keys = { forward: false, backward: false, left: false, right: false, run: false };
+      let canJump = false;
+
+      document.addEventListener("keydown", (e) => {
+        switch (e.code) {
+          case "KeyW": keys.forward = true; break;
+          case "KeyS": keys.backward = true; break;
+          case "KeyA": keys.left = true; break;
+          case "KeyD": keys.right = true; break;
+          case "ShiftLeft":
+          case "ShiftRight": keys.run = true; break;
+          case "Space":
+            if (canJump) {
+              velocity.y = 7.5;
+              canJump = false;
+            }
+            break;
+        }
+      });
+
+      document.addEventListener("keyup", (e) => {
+        switch (e.code) {
+          case "KeyW": keys.forward = false; break;
+          case "KeyS": keys.backward = false; break;
+          case "KeyA": keys.left = false; break;
+          case "KeyD": keys.right = false; break;
+          case "ShiftLeft":
+          case "ShiftRight": keys.run = false; break;
+        }
+      });
+
+      const clock = new THREE.Clock();
+      animate();
+
+      function animate() {
+        requestAnimationFrame(animate);
+
+        const delta = clock.getDelta();
+
+        if (controls.isLocked) {
+          velocity.x -= velocity.x * 10 * delta;
+          velocity.z -= velocity.z * 10 * delta;
+          velocity.y -= 20 * delta;
+
+          direction.z = Number(keys.forward) - Number(keys.backward);
+          direction.x = Number(keys.right) - Number(keys.left);
+          direction.normalize();
+
+          const speed = keys.run ? 10.5 : 6.4;
+          if (keys.forward || keys.backward) velocity.z -= direction.z * speed * delta;
+          if (keys.left || keys.right) velocity.x -= direction.x * speed * delta;
+
+          controls.moveRight(-velocity.x * delta);
+          controls.moveForward(-velocity.z * delta);
+
+          camera.position.y += velocity.y * delta;
+          if (camera.position.y < 1.75) {
+            velocity.y = 0;
+            camera.position.y = 1.75;
+            canJump = true;
+          }
+
+          // límites aproximados de la mansión
+          camera.position.x = THREE.MathUtils.clamp(camera.position.x, -26, 26);
+          camera.position.z = THREE.MathUtils.clamp(camera.position.z, -26, 26);
+        }
+
+        renderer.render(scene, camera);
+      }
+
+      function buildMansionShell() {
+        const wallMat = new THREE.MeshStandardMaterial({
+          map: wallTexture,
+          roughness: 0.88,
+          metalness: 0.04,
+        });
+
+        const walls = [
+          wall(58, 8, 0, 4, -29),
+          wall(58, 8, 0, 4, 29),
+          wall(58, 8, -29, 4, 0, true),
+          wall(58, 8, 29, 4, 0, true),
+
+          // Pasillos y divisiones interiores
+          wall(34, 8, 0, 4, -10),
+          wall(32, 8, -12, 4, 10, true),
+          wall(32, 8, 12, 4, 10, true),
+          wall(20, 8, 0, 4, 10),
+          wall(14, 8, 0, 4, 22),
+        ];
+
+        walls.forEach((entry) => {
+          const mesh = new THREE.Mesh(entry.geom, wallMat);
+          mesh.position.set(entry.x, entry.y, entry.z);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          scene.add(mesh);
+        });
+
+        // Aberturas / puertas simuladas con marcos
+        addDoorFrame(0, -29, 0);
+        addDoorFrame(0, -10, 0);
+        addDoorFrame(-12, 10, Math.PI / 2);
+        addDoorFrame(12, 10, Math.PI / 2);
+        addDoorFrame(0, 22, 0);
+      }
+
+      function buildRoomsAndDecor() {
+        // Candelabros/luces cálidas
+        [[0, 0], [-16, -16], [16, -16], [0, 16], [0, 24]].forEach(([x, z]) => {
+          const lamp = new THREE.PointLight(0xffd9a8, 0.9, 15, 2);
+          lamp.position.set(x, 4.8, z);
+          lamp.castShadow = true;
+          lamp.shadow.mapSize.set(1024, 1024);
+          scene.add(lamp);
+
+          const globe = new THREE.Mesh(
+            new THREE.SphereGeometry(0.2, 16, 16),
+            new THREE.MeshStandardMaterial({ emissive: 0xffb65f, emissiveIntensity: 1.1, color: 0x3a2b17 })
+          );
+          globe.position.copy(lamp.position);
+          scene.add(globe);
+        });
+
+        // Alfombra central
+        const rug = new THREE.Mesh(
+          new THREE.PlaneGeometry(13, 8),
+          new THREE.MeshStandardMaterial({ color: 0x5b1920, roughness: 0.95, metalness: 0.01 })
+        );
+        rug.rotation.x = -Math.PI / 2;
+        rug.position.set(0, 0.02, 0);
+        rug.receiveShadow = true;
+        scene.add(rug);
+
+        // Biblioteca lateral
+        for (let i = 0; i < 7; i++) {
+          const shelf = new THREE.Mesh(
+            new THREE.BoxGeometry(1.4, 5.4, 0.45),
+            new THREE.MeshStandardMaterial({ color: 0x3d2a1f, roughness: 0.76 })
+          );
+          shelf.position.set(-22 + i * 2.35, 2.7, -25.8);
+          shelf.castShadow = true;
+          shelf.receiveShadow = true;
+          scene.add(shelf);
+
+          for (let b = 0; b < 18; b++) {
+            const book = new THREE.Mesh(
+              new THREE.BoxGeometry(0.08, 0.38 + Math.random() * 0.2, 0.26),
+              new THREE.MeshStandardMaterial({
+                color: new THREE.Color().setHSL(0.03 + Math.random() * 0.14, 0.45, 0.33 + Math.random() * 0.2),
+                roughness: 0.8,
+              })
+            );
+            book.position.set(
+              shelf.position.x - 0.52 + (b % 9) * 0.12,
+              1.1 + Math.floor(b / 9) * 1.7,
+              -25.55
+            );
+            book.castShadow = true;
+            scene.add(book);
+          }
+        }
+
+        // Comedor con mesa y sillas
+        const table = new THREE.Mesh(
+          new THREE.BoxGeometry(8, 0.4, 3.6),
+          new THREE.MeshStandardMaterial({ color: 0x442d1f, roughness: 0.7 })
+        );
+        table.position.set(0, 1.45, 15.5);
+        table.castShadow = true;
+        table.receiveShadow = true;
+        scene.add(table);
+
+        for (let i = 0; i < 4; i++) {
+          const leg = new THREE.Mesh(
+            new THREE.BoxGeometry(0.3, 2.6, 0.3),
+            new THREE.MeshStandardMaterial({ color: 0x3a2519, roughness: 0.78 })
+          );
+          leg.position.set(i < 2 ? -3.6 : 3.6, 0.45, i % 2 === 0 ? 14 : 17);
+          leg.castShadow = true;
+          scene.add(leg);
+        }
+
+        const chairPos = [
+          [-4.7, 15.5], [4.7, 15.5],
+          [-2.1, 13.8], [0, 13.8], [2.1, 13.8],
+          [-2.1, 17.2], [0, 17.2], [2.1, 17.2],
+        ];
+        chairPos.forEach(([x, z]) => addChair(x, z));
+
+        // Cuadros decorativos en pasillos
+        for (let i = 0; i < 6; i++) {
+          addPainting(-28.5, 3.1, -20 + i * 8, Math.PI / 2);
+          addPainting(28.5, 3.1, -20 + i * 8, -Math.PI / 2);
+        }
+
+        // Escalera ornamental
+        for (let i = 0; i < 11; i++) {
+          const step = new THREE.Mesh(
+            new THREE.BoxGeometry(2.8, 0.3, 1.1),
+            new THREE.MeshStandardMaterial({ color: 0x4a433e, roughness: 0.9 })
+          );
+          step.position.set(-19 + i * 0.9, 0.16 + i * 0.24, 23.4);
+          step.castShadow = true;
+          step.receiveShadow = true;
+          scene.add(step);
+        }
+      }
+
+      function buildExteriorHints() {
+        // Ventanas y luz solar entrando
+        const windowMat = new THREE.MeshStandardMaterial({ color: 0xcde3ff, transparent: true, opacity: 0.38 });
+        for (let i = -2; i <= 2; i++) {
+          const win = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 2.4), windowMat);
+          win.position.set(i * 9, 3.6, -28.7);
+          scene.add(win);
+
+          const sunBeam = new THREE.SpotLight(0xffefcc, 1.2, 20, Math.PI / 8, 0.35, 1.0);
+          sunBeam.position.set(i * 9, 6.5, -29);
+          sunBeam.target.position.set(i * 9, 0, -21);
+          scene.add(sunBeam);
+          scene.add(sunBeam.target);
+        }
+
+        // Árboles básicos afuera para ambiente diurno
+        for (let i = 0; i < 28; i++) {
+          const angle = (i / 28) * Math.PI * 2;
+          const r = 39 + Math.random() * 9;
+          const x = Math.cos(angle) * r;
+          const z = Math.sin(angle) * r;
+
+          const trunk = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.28, 0.4, 4.8, 8),
+            new THREE.MeshStandardMaterial({ color: 0x33281f, roughness: 1 })
+          );
+          trunk.position.set(x, 2.4, z);
+
+          const crown = new THREE.Mesh(
+            new THREE.SphereGeometry(2.2 + Math.random() * 1.2, 9, 9),
+            new THREE.MeshStandardMaterial({ color: 0x2f5b2e, roughness: 1 })
+          );
+          crown.position.set(x, 5.3, z);
+
+          trunk.castShadow = crown.castShadow = true;
+          trunk.receiveShadow = crown.receiveShadow = true;
+          scene.add(trunk, crown);
+        }
+      }
+
+      function addChair(x, z) {
+        const mat = new THREE.MeshStandardMaterial({ color: 0x513728, roughness: 0.76 });
+        const seat = new THREE.Mesh(new THREE.BoxGeometry(1, 0.14, 1), mat);
+        seat.position.set(x, 0.82, z);
+        seat.castShadow = true;
+        scene.add(seat);
+
+        const back = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 0.14), mat);
+        back.position.set(x, 1.35, z - 0.43);
+        back.castShadow = true;
+        scene.add(back);
+
+        [[-0.38, -0.38], [0.38, -0.38], [-0.38, 0.38], [0.38, 0.38]].forEach(([lx, lz]) => {
+          const leg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.8, 0.12), mat);
+          leg.position.set(x + lx, 0.4, z + lz);
+          leg.castShadow = true;
+          scene.add(leg);
+        });
+      }
+
+      function addPainting(x, y, z, rotY) {
+        const frame = new THREE.Mesh(
+          new THREE.BoxGeometry(1.6, 1.1, 0.12),
+          new THREE.MeshStandardMaterial({ color: 0x7a6137, roughness: 0.72 })
+        );
+        frame.position.set(x, y, z);
+        frame.rotation.y = rotY;
+        frame.castShadow = true;
+        frame.receiveShadow = true;
+        scene.add(frame);
+
+        const art = new THREE.Mesh(
+          new THREE.PlaneGeometry(1.35, 0.82),
+          new THREE.MeshStandardMaterial({ color: new THREE.Color().setHSL(Math.random(), 0.35, 0.35) })
+        );
+        art.position.set(x + Math.cos(rotY) * 0.07, y, z - Math.sin(rotY) * 0.07);
+        art.rotation.y = rotY;
+        scene.add(art);
+      }
+
+      function addDoorFrame(x, z, rotY) {
+        const mat = new THREE.MeshStandardMaterial({ color: 0x6e5638, roughness: 0.7 });
+        const left = new THREE.Mesh(new THREE.BoxGeometry(0.35, 4.4, 0.35), mat);
+        const right = new THREE.Mesh(new THREE.BoxGeometry(0.35, 4.4, 0.35), mat);
+        const top = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.35, 0.35), mat);
+
+        left.position.set(x - 1.3, 2.2, z);
+        right.position.set(x + 1.3, 2.2, z);
+        top.position.set(x, 4.2, z);
+
+        [left, right, top].forEach((m) => {
+          m.rotation.y = rotY;
+          m.castShadow = true;
+          m.receiveShadow = true;
+          scene.add(m);
+        });
+      }
+
+      function wall(width, height, x, y, z, rotate = false) {
+        return {
+          geom: new THREE.BoxGeometry(rotate ? 0.8 : width, height, rotate ? width : 0.8),
+          x,
+          y,
+          z,
+        };
+      }
+
+      function createCheckerTexture(c1, c2, size = 256, tile = 8) {
+        const c = document.createElement("canvas");
+        c.width = c.height = size;
+        const ctx = c.getContext("2d");
+
+        const step = size / tile;
+        for (let y = 0; y < tile; y++) {
+          for (let x = 0; x < tile; x++) {
+            ctx.fillStyle = (x + y) % 2 === 0 ? c1 : c2;
+            ctx.fillRect(x * step, y * step, step, step);
+          }
+        }
+
+        const tex = new THREE.CanvasTexture(c);
+        tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        tex.colorSpace = THREE.SRGBColorSpace;
+        return tex;
+      }
+
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    </script>
+  </body>
+</html>
