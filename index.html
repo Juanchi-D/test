@@ -3,14 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mansión Nocturna 3D</title>
+    <title>Mansión Diurna 3D</title>
     <style>
       html,
       body {
         margin: 0;
         height: 100%;
         overflow: hidden;
-        background: #03040a;
+        background: #cfe4ff;
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       }
 
@@ -18,7 +18,7 @@
         position: fixed;
         inset: 0;
         pointer-events: none;
-        color: #f4f1e8;
+        color: #1e2a3a;
       }
 
       #info {
@@ -27,8 +27,8 @@
         left: 16px;
         max-width: 380px;
         padding: 12px 14px;
-        background: rgba(9, 12, 18, 0.64);
-        border: 1px solid rgba(214, 197, 148, 0.28);
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(120, 145, 180, 0.38);
         border-radius: 10px;
         box-shadow: 0 0 28px rgba(0, 0, 0, 0.35);
         backdrop-filter: blur(4px);
@@ -37,14 +37,14 @@
       #info h1 {
         margin: 0 0 8px;
         font-size: 1.04rem;
-        color: #e2d4a0;
+        color: #2e4f77;
       }
 
       #info p {
         margin: 0;
         line-height: 1.35;
         font-size: 0.91rem;
-        color: #e5ded0;
+        color: #243a57;
       }
 
       #crosshair {
@@ -60,7 +60,7 @@
       #crosshair::after {
         content: "";
         position: absolute;
-        background: rgba(242, 232, 201, 0.7);
+        background: rgba(50, 73, 106, 0.55);
       }
 
       #crosshair::before {
@@ -84,8 +84,8 @@
         transform: translateX(-50%);
         padding: 10px 16px;
         border-radius: 999px;
-        background: rgba(10, 12, 20, 0.7);
-        border: 1px solid rgba(220, 201, 154, 0.32);
+        background: rgba(255, 255, 255, 0.75);
+        border: 1px solid rgba(110, 138, 171, 0.45);
         font-size: 0.85rem;
       }
 
@@ -97,11 +97,11 @@
   <body>
     <div id="hud">
       <div id="info">
-        <h1>🏚️ Mansión Nocturna — Exploración 3D</h1>
+        <h1>🏛️ Mansión Diurna — Modo Exploración</h1>
         <p>
           Click para entrar. <b>WASD</b> para moverte, <b>mouse</b> para mirar,
           <b>Shift</b> para correr, <b>Espacio</b> para saltar.
-          Recorre la entrada, biblioteca, comedor y el gran pasillo decorado.
+          Recorre la entrada, biblioteca, comedor y el gran pasillo para observar el mapa con buena luz.
         </p>
       </div>
       <div id="crosshair"></div>
@@ -113,7 +113,7 @@
       import { PointerLockControls } from "https://unpkg.com/three@0.162.0/examples/jsm/controls/PointerLockControls.js";
 
       const scene = new THREE.Scene();
-      scene.fog = new THREE.FogExp2(0x06070d, 0.024);
+      scene.fog = new THREE.FogExp2(0xc7d8ef, 0.008);
 
       const camera = new THREE.PerspectiveCamera(
         72,
@@ -135,28 +135,28 @@
 
       document.body.addEventListener("click", () => controls.lock());
       controls.addEventListener("lock", () => {
-        prompt.textContent = "Explorando... Presiona ESC para liberar el mouse";
+        prompt.textContent = "Explorando el mapa... Presiona ESC para liberar el mouse";
       });
       controls.addEventListener("unlock", () => {
         prompt.textContent = "Haz click para continuar explorando";
       });
 
       // Iluminación base
-      const ambient = new THREE.AmbientLight(0x4b4f63, 0.28);
+      const ambient = new THREE.AmbientLight(0xe8f1ff, 0.72);
       scene.add(ambient);
 
-      const moonLight = new THREE.DirectionalLight(0x8ba8ff, 0.5);
-      moonLight.position.set(-18, 22, 14);
-      moonLight.castShadow = true;
-      moonLight.shadow.mapSize.set(2048, 2048);
-      moonLight.shadow.camera.left = -40;
-      moonLight.shadow.camera.right = 40;
-      moonLight.shadow.camera.top = 40;
-      moonLight.shadow.camera.bottom = -40;
-      scene.add(moonLight);
+      const sunLight = new THREE.DirectionalLight(0xfff0cf, 1.05);
+      sunLight.position.set(16, 28, 10);
+      sunLight.castShadow = true;
+      sunLight.shadow.mapSize.set(2048, 2048);
+      sunLight.shadow.camera.left = -40;
+      sunLight.shadow.camera.right = 40;
+      sunLight.shadow.camera.top = 40;
+      sunLight.shadow.camera.bottom = -40;
+      scene.add(sunLight);
 
-      const floorTexture = createCheckerTexture("#2f2a28", "#211d1a", 1024, 14);
-      const wallTexture = createCheckerTexture("#575250", "#46423f", 512, 18);
+      const floorTexture = createCheckerTexture("#8b8177", "#756b62", 1024, 14);
+      const wallTexture = createCheckerTexture("#d8d1c9", "#c7bfb7", 512, 18);
       floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
       wallTexture.wrapS = wallTexture.wrapT = THREE.RepeatWrapping;
       floorTexture.repeat.set(18, 18);
@@ -178,7 +178,7 @@
       // Techo oscuro
       const ceiling = new THREE.Mesh(
         new THREE.PlaneGeometry(58, 58),
-        new THREE.MeshStandardMaterial({ color: 0x1a1818, roughness: 1 })
+        new THREE.MeshStandardMaterial({ color: 0xf0ece6, roughness: 1 })
       );
       ceiling.position.y = 8;
       ceiling.rotation.x = Math.PI / 2;
@@ -302,7 +302,7 @@
       function buildRoomsAndDecor() {
         // Candelabros/luces cálidas
         [[0, 0], [-16, -16], [16, -16], [0, 16], [0, 24]].forEach(([x, z]) => {
-          const lamp = new THREE.PointLight(0xffc680, 2.6, 18, 2);
+          const lamp = new THREE.PointLight(0xffd9a8, 0.9, 15, 2);
           lamp.position.set(x, 4.8, z);
           lamp.castShadow = true;
           lamp.shadow.mapSize.set(1024, 1024);
@@ -402,21 +402,21 @@
       }
 
       function buildExteriorHints() {
-        // Ventanas y luz de luna entrando
-        const windowMat = new THREE.MeshStandardMaterial({ color: 0x91a1c7, transparent: true, opacity: 0.25 });
+        // Ventanas y luz solar entrando
+        const windowMat = new THREE.MeshStandardMaterial({ color: 0xcde3ff, transparent: true, opacity: 0.38 });
         for (let i = -2; i <= 2; i++) {
           const win = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 2.4), windowMat);
           win.position.set(i * 9, 3.6, -28.7);
           scene.add(win);
 
-          const moonBeam = new THREE.SpotLight(0x9ab4ff, 0.8, 18, Math.PI / 8, 0.4, 1.3);
-          moonBeam.position.set(i * 9, 6.5, -29);
-          moonBeam.target.position.set(i * 9, 0, -21);
-          scene.add(moonBeam);
-          scene.add(moonBeam.target);
+          const sunBeam = new THREE.SpotLight(0xffefcc, 1.2, 20, Math.PI / 8, 0.35, 1.0);
+          sunBeam.position.set(i * 9, 6.5, -29);
+          sunBeam.target.position.set(i * 9, 0, -21);
+          scene.add(sunBeam);
+          scene.add(sunBeam.target);
         }
 
-        // Árboles básicos afuera para ambiente
+        // Árboles básicos afuera para ambiente diurno
         for (let i = 0; i < 28; i++) {
           const angle = (i / 28) * Math.PI * 2;
           const r = 39 + Math.random() * 9;
@@ -431,7 +431,7 @@
 
           const crown = new THREE.Mesh(
             new THREE.SphereGeometry(2.2 + Math.random() * 1.2, 9, 9),
-            new THREE.MeshStandardMaterial({ color: 0x162118, roughness: 1 })
+            new THREE.MeshStandardMaterial({ color: 0x2f5b2e, roughness: 1 })
           );
           crown.position.set(x, 5.3, z);
 
